@@ -1,20 +1,12 @@
-# create-svelte
+# Splitwiser
+
+## This is a SvelteKit project
 
 Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
 
-## Creating a project
+### Developing
 
-If you're seeing this, you've probably already done this step. Congrats!
-
-```bash
-# create a new project in the current directory
-npm create svelte@latest
-
-# create a new project in my-app
-npm create svelte@latest my-app
-```
-
-## Developing
+### SvelteKit
 
 Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
 
@@ -25,7 +17,28 @@ npm run dev
 npm run dev -- --open
 ```
 
-## Building
+### Database
+
+We're using SQLite with [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) and a custom migrator function that allows us to declare our schema in plain ol' SQL (thank you [David Rõthlisberger and William Manley](https://david.rothlis.net/declarative-schema-migration-for-sqlite/)).
+
+#### Linting
+
+We're using the [SQLFluff](https://github.com/sqlfluff/sqlfluff) CLI to lint our SQL. 
+
+Optionally, create a virtual environment. Then install SQLFluff with pip:
+
+```bash
+pip install sqlfluff
+```
+
+Lint!
+
+```bash
+# Ignore some rules we don't care about. The options are here: https://docs.sqlfluff.com/en/stable/cli.html#sqlfluff-lint
+sqlfluff lint schema.sql --dialect sqlite -e RF06,LT02,LT05,LT12
+```
+
+### Building
 
 To create a production version of your app:
 

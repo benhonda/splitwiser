@@ -24,6 +24,8 @@ CREATE TABLE "auth_key" (
 -- partys are used to party anon users together
 CREATE TABLE "party" (
   "id" INTEGER PRIMARY KEY AUTOINCREMENT,
+  "hashed_id" TEXT NOT NULL UNIQUE,
+  "hashed_password" TEXT,
   "party_name" TEXT NOT NULL,
   "created_at" DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')),
   "owner_user_id" TEXT NOT NULL,

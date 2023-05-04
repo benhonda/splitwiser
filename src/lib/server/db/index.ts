@@ -1,8 +1,7 @@
 import Database from 'better-sqlite3';
-import { DB_PATH } from '$env/static/private';
+import { DB_PATH, SECRET_HASH_KEY } from '$env/static/private';
 import type { AnonUser, TempAnonUser } from './types';
-import { QueryLoader } from './QueryLoader';
-import { readFileSync } from 'fs';
+const { createHmac } = await import('node:crypto');
 
 const db = new Database(DB_PATH, { verbose: console.log });
 // why WAL? https://github.com/WiseLibs/better-sqlite3/blob/master/docs/performance.md
@@ -11,6 +10,11 @@ const db = new Database(DB_PATH, { verbose: console.log });
 // this is a class that we use to cache queries... though I'm not sure we actually need it...
 // more on that later.
 // const queryLoader = new QueryLoader();
+
+function createUniqueKey(str: string): string {
+	const hash = createHmac('sha256', SECRET_HASH_KEY).update(str).digest('hex');
+	return hash;
+}
 
 export function createAnonUserWithRegistration(
 	user_id: string,
@@ -34,7 +38,7 @@ export function createPartyWithMembers(
 	// create a new party
 	const addParty = db.prepare(
 		`
-    INSERT INTO party (party_name, owner_user_id) VALUES (?, ?)
+    INSERT INTO party (party_name, owner_user_id, uid) VALUES (?, ?, ?)
     RETURNING id
     `
 	);
@@ -63,7 +67,8 @@ export function createPartyWithMembers(
 
 	const newPartyWithMembers = db.transaction((members: TempAnonUser[]) => {
 		// add the party
-		const party_id = addParty.run(party_name, owner_user_id).lastInsertRowid;
+		const uid = createUniqueKey(`${owner_user_id}-${party_name}`);
+		const party_id = addParty.run(party_name, owner_user_id, uid).lastInsertRowid;
 		console.log('party_id:', party_id);
 
 		// add the owner to the party

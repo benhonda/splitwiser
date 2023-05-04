@@ -12,11 +12,22 @@ export type TempAnonUser = {
 	last_name: string;
 };
 
-export type Party = {
+export type Group = {
 	id: number;
-	party_name: string;
+	hashed_id: string;
+	hashed_password: string;
+	group_name: string;
 	created_at: string;
 	owner_user_id: string; // this is an AuthUser.id
+};
+
+export type AnonToken = {
+	id: number;
+	hashed_id: string;
+	max_age: number;
+	anon_user_id: number;
+	group_id: number;
+	created_at: string;
 };
 
 // EXAMPLE TYPES

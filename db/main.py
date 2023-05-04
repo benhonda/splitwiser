@@ -1,6 +1,7 @@
 import sqlite3
 import time
 from migrator import DBMigrator
+import sys
 
 if __name__ == '__main__':
     db = sqlite3.connect("dev.db")
@@ -9,6 +10,21 @@ if __name__ == '__main__':
     journal_mode, = db.execute("PRAGMA journal_mode").fetchone()
 
     print(f"Running... user_version={v} journal_mode={journal_mode}")
+
+    args = sys.argv[1:]
+    if args[0] == 'refresh_tokens':
+        c = db.cursor()
+        c.execute("""
+        DELETE FROM anon_token WHERE datetime(created_at, '+' || max_age || ' seconds') < datetime(CURRENT_TIMESTAMP, 'localtime')
+        """)
+        num_deleted = c.rowcount
+
+        db.commit()
+        c.close()
+        db.close()
+
+        print(f"{num_deleted} Refresh tokens deleted.")
+        sys.exit(0)
 
     if v == 0:
         # Initialising database from scratch.

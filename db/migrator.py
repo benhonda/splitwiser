@@ -129,6 +129,15 @@ class DBMigrator:
 
         return
 
+    def delete_expired_anon_tokens(self):
+        """Delete expired anonymous tokens."""
+        self.log_execute(
+            "Delete expired anonymous tokens",
+            """\
+            DELETE FROM anon_tokens
+            WHERE datetime(created_at, '+' || max_age || ' seconds') < datetime(CURRENT_TIMESTAMP, 'localtime')
+            """)
+
     def migrate(self):
         # In CI the database schema may be changing all the time.  This checks
         # the current db and if it doesn't match database.sql we will

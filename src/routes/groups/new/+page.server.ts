@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { createPartyWithMembers, getAnonUsersUserMaybeKnows } from '$lib/server/db';
+import { createGroupWithMembers, getAnonUsersUserMaybeKnows } from '$lib/server/db';
 import type { AnonUser, TempAnonUser } from '$lib/server/db/types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -21,18 +21,18 @@ export const actions: Actions = {
 		const { user } = await locals.auth.validateUser();
 
 		const form = await request.formData();
-		const party_name = form.get('party_name');
-		const party_members = form.get('party_members');
+		const group_name = form.get('group_name');
+		const group_members = form.get('group_members');
 
-		console.log('party_name', party_name);
-		console.log('party_members', party_members);
+		console.log('group_name', group_name);
+		console.log('group_members', group_members);
 
 		// check for empty values
-		if (typeof party_name !== 'string' || typeof party_members !== 'string') return fail(400);
+		if (typeof group_name !== 'string' || typeof group_members !== 'string') return fail(400);
 
 		try {
-			const partyMembersParsed: TempAnonUser[] = JSON.parse(party_members);
-			createPartyWithMembers(user.id, party_name, partyMembersParsed);
+			const groupMembersParsed: TempAnonUser[] = JSON.parse(group_members);
+			createGroupWithMembers(user.id, group_name, groupMembersParsed);
 			console.log('Success! Somehow.');
 		} catch (e) {
 			console.log(e);

@@ -10,7 +10,7 @@
 	$: partiersJsonString = JSON.stringify(partiers);
 
 	// this function is called when the user clicks the "Add Group Member" button from the modal
-	function handleAddPartyMember(event: CustomEvent) {
+	function handleAddGroupMember(event: CustomEvent) {
 		partiers.push(event.detail);
 		// Why no reactivity?
 		// From svelte:
@@ -26,14 +26,14 @@
 	<p>Email: {data.user.email}</p>
 
 	<form method="POST" use:enhance>
-		<label for="party_name">Group name</label><br />
-		<input id="party_name" name="party_name" /><br />
+		<label for="group_name">Group name</label><br />
+		<input id="group_name" name="group_name" /><br />
 
-		<label for="party_members">Group members</label><br />
+		<label for="group_members">Group members</label><br />
 		<button type="button" on:click={() => (showModal = true)}>Add Group Members</button>
 
-		<AddMemberModal bind:showModal on:addPartyMember={handleAddPartyMember} />
-		<input type="hidden" hidden name="party_members" bind:value={partiersJsonString} />
+		<AddMemberModal bind:showModal on:addGroupMember={handleAddGroupMember} />
+		<input type="hidden" hidden name="group_members" bind:value={partiersJsonString} />
 
 		{#each data.anonUsers as anon_user}
 			<p>{anon_user.first_name} {anon_user.last_name} {anon_user.user_id}</p>
@@ -46,8 +46,8 @@
 		<!-- 
 
       get the anon_user_id's for the current user
-      from all parties, get all the parties that the anon_user_id is a member of
-      from all the parties that the user is a member of, get all the anon users that are members of those parties
+      from all groups, get all the groups that the anon_user_id is a member of
+      from all the groups that the user is a member of, get all the anon users that are members of those groups
 
      -->
 

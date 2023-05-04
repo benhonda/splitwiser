@@ -18,8 +18,8 @@
 		// dialog.close();
 	}
 
-	function addPartyMember(first_name: string, last_name: string) {
-		dispatch('addPartyMember', { first_name, last_name });
+	function addGroupMember(first_name: string, last_name: string) {
+		dispatch('addGroupMember', { first_name, last_name });
 		resetDialog();
 	}
 </script>
@@ -46,7 +46,7 @@
 		<button
 			type="button"
 			class="text-indigo-600"
-			on:click={() => addPartyMember(first_name, last_name)}>Add Group Member</button
+			on:click={() => addGroupMember(first_name, last_name)}>Add Group Member</button
 		>
 	</div>
 </dialog>

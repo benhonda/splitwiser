@@ -3,7 +3,7 @@
 	import type { PageData } from './$types';
 	export let data: PageData;
 
-	// let parties: number[] = [];
+	// let groups: number[] = [];
 </script>
 
 <div>
@@ -21,17 +21,17 @@
     <!-- show all groups that the user has write access to -->
     <!-- Nevermind, don't allow users to add to multiple groups at a time -->
 		<!-- <p>Add to group(s)</p>
-		{#each data.parties as party}
+		{#each data.groups as group}
 			<label>
-				<input type="checkbox" bind:group={parties} id={`party_${party.id}`} name="party_ids" value={party.id} />
-				{party.party_name}
+				<input type="checkbox" bind:group={groups} id={`group_${group.id}`} name="group_ids" value={group.id} />
+				{group.group_name}
 			</label>
 			<br />
 		{/each}
 
-		<p>Parties selected</p>
-		{#each parties as party_id}
-			<p>{data.parties.find((party) => party.id == party_id)?.party_name}</p>
+		<p>Groups selected</p>
+		{#each groups as group_id}
+			<p>{data.groups.find((group) => group.id == group_id)?.group_name}</p>
 		{/each} -->
 
 		<!-- URL params

@@ -12,7 +12,7 @@ if __name__ == '__main__':
     print(f"Running... user_version={v} journal_mode={journal_mode}")
 
     args = sys.argv[1:]
-    if args[0] == 'refresh_tokens':
+    if args and args[0] == 'refresh_tokens':
         c = db.cursor()
         c.execute("""
         DELETE FROM anon_token WHERE datetime(created_at, '+' || max_age || ' seconds') < datetime(CURRENT_TIMESTAMP, 'localtime')

@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import type { PageData } from './$types';
-	import AddMemberModal from '../AddMemberModal.svelte';
 	import type { TempAnonUser } from '$lib/server/db/types';
+	import AddGroupMemberModal from '../../AddGroupMemberModal.svelte';
 	export let data: PageData;
 
 	let showModal = false;
@@ -11,10 +11,8 @@
 
 	// this function is called when the user clicks the "Add Group Member" button from the modal
 	function handleAddGroupMember(event: CustomEvent) {
-		partiers.push(event.detail);
-		// Why no reactivity?
-		// From svelte:
-		// A simple rule of thumb: the updated variable must directly appear on the left hand side of the assignment.
+    const newMembers: TempAnonUser[] = event.detail;
+		partiers.push(...newMembers);
 		partiers = partiers;
 		console.log(partiers);
 	}
@@ -22,8 +20,8 @@
 
 <div>
 	<h1>Let's create a group</h1>
-	<p>User id: {data.user.id}</p>
-	<p>Email: {data.user.email}</p>
+	<!-- <p>User id: {data.user.id}</p>
+	<p>Email: {data.user.email}</p> -->
 
 	<form method="POST" use:enhance>
 		<label for="group_name">Group name</label><br />
@@ -32,11 +30,11 @@
 		<label for="group_members">Group members</label><br />
 		<button type="button" on:click={() => (showModal = true)}>Add Group Members</button>
 
-		<AddMemberModal bind:showModal on:addGroupMember={handleAddGroupMember} />
+    <AddGroupMemberModal bind:showModal on:done={handleAddGroupMember} />
 		<input type="hidden" hidden name="group_members" bind:value={partiersJsonString} />
 
 		{#each data.anonUsers as anon_user}
-			<p>{anon_user.first_name} {anon_user.last_name} {anon_user.user_id}</p>
+			<p>{anon_user.first_name} {anon_user.last_name} (id: {anon_user.id}, user_id: {anon_user.user_id})</p>
 		{/each}
 
 		{#each partiers as partier}

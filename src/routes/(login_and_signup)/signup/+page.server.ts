@@ -3,9 +3,23 @@ import { auth } from '$lib/server/lucia';
 import type { PageServerLoad, Actions } from './$types';
 import { createAnonUserWithRegistration } from '$lib/server/db';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ url, locals }) => {
 	const session = await locals.auth.validate();
-	if (session) throw redirect(302, '/');
+	if (session) {
+		// maybe redirect to the previous page...
+		const returnUrlStr = url.searchParams.get('r') || '';
+
+		// TODO: need more validation here?
+		// validate return url
+		const returnUrl = new URL(returnUrlStr);
+
+		if (returnUrl.origin === url.origin) {
+			throw redirect(302, returnUrl.pathname + returnUrl.search);
+		}
+
+		throw redirect(302, '/groups');
+	}
+
 	return {};
 };
 

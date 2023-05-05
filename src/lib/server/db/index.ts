@@ -16,6 +16,20 @@ function createUniqueKey(str: string): string {
 	return hash;
 }
 
+// Repeat queries go here... not sure if this is bad to have db.prepare outside of a function
+const queryPrimaryAnonUserForUser = (select_params = 'id') =>
+	db.prepare(
+		`SELECT ${select_params} FROM anon_user WHERE user_id = ? ORDER BY "primary" DESC LIMIT 1`
+	);
+
+const queryAllAnonUsersForUser = db.prepare(`SELECT id FROM anon_user WHERE user_id = ?`);
+
+export function getPrimaryAnonUserForUser(user_id: string): AnonUser {
+	const anon_user = queryPrimaryAnonUserForUser('*').get(user_id) as AnonUser;
+	console.log('anon_user', anon_user);
+	return anon_user;
+}
+
 /**
  * Gets the anon_users that the given user_id may know.
  * @param user_id The user_id of the user.
@@ -26,13 +40,16 @@ export function createAnonUserWithRegistration(
 	first_name: string,
 	last_name: string
 ): void {
-	const addAnonUser = db.prepare(
+	db.prepare(
 		`
-    INSERT INTO anon_user (user_id, first_name, last_name, active) VALUES (?, ?, ?, 1)
+    INSERT INTO anon_user (user_id, first_name, last_name, "primary") VALUES (:user_id, :first_name, :last_name, :primary)
     `
-	);
-
-	addAnonUser.run(user_id, first_name, last_name);
+	).run({
+		user_id,
+		first_name,
+		last_name,
+		primary: 1
+	});
 }
 
 export function getActiveUsersInGroup(group_id: number): AnonUser[] {
@@ -67,12 +84,25 @@ export function getAnonUsersInGroup(group_id: number): AnonUser[] {
 
 	anon_users.forEach((anonUser) => {
 		anonUser.active =
-			active_anon_users.some((activeAnonUser) => activeAnonUser.id === anonUser.id) ||
+			// active_anon_users.some((activeAnonUser) => activeAnonUser.id === anonUser.id) ||
 			anonUser.user_id !== null;
 	});
 
 	return anon_users;
 }
+
+// create a new anon_user
+const queryAddAnonUser = db.prepare(
+	`
+  INSERT INTO anon_user (first_name, last_name) VALUES (:first_name, :last_name)
+  RETURNING id
+  `
+);
+
+// add the new group to the anon_users
+const queryAddAnonUserToAnonUserGroups = db.prepare(
+	`INSERT INTO anon_user_groups (anon_user_id, group_id) VALUES (?, ?)`
+);
 
 /**
  * Creates a new group with the given members.
@@ -93,48 +123,59 @@ export function createGroupWithMembers(
     `
 	);
 
-	// get the current user's anon_user_id
-	const getAnonUserId = db.prepare(
-		`
-    SELECT id FROM anon_user WHERE user_id = ?
-    `
-	);
-
-	// create a new anon_user
-	const addAnonUser = db.prepare(
-		`
-    INSERT INTO anon_user (first_name, last_name) VALUES (:first_name, :last_name)
-    RETURNING id
-    `
-	);
-
-	// add the new group to the anon_users
-	const addGroupToAnonUsers = db.prepare(
-		`
-    INSERT INTO anon_user_groups (anon_user_id, group_id) VALUES (?, ?)
-    `
-	);
-
 	const newGroupWithMembers = db.transaction((members: TempAnonUser[]) => {
 		// add the group
 		const hashed_id = createUniqueKey(`${owner_user_id}-${group_name}`);
 		const group_id = addGroup.run(group_name, owner_user_id, hashed_id).lastInsertRowid;
-		console.log('group_id:', group_id);
 
 		// add the owner to the group
-		const owners_anon = getAnonUserId.get(owner_user_id) as { id: number };
-		addGroupToAnonUsers.run(owners_anon.id, group_id);
+		const owners_anon = queryPrimaryAnonUserForUser().get(owner_user_id) as { id: number };
+		queryAddAnonUserToAnonUserGroups.run(owners_anon.id, group_id);
 
 		for (const member of members) {
 			console.log('member:', member);
 			// add the anon user
-			const anon_id = addAnonUser.run(member).lastInsertRowid;
+			const anon_id = queryAddAnonUser.run(member).lastInsertRowid;
 			// add the many-to-many relationship between the anon user and the group
-			addGroupToAnonUsers.run(anon_id, group_id);
+			queryAddAnonUserToAnonUserGroups.run(anon_id, group_id);
 		}
 	});
 
 	newGroupWithMembers(members);
+}
+
+/**
+ *  Adds anon users to a group.
+ * @param group_id The group_id of the group.
+ * @param members An array of TempAnonUser objects.
+ */
+export function addAnonUsersToGroup(group_id: number, members: TempAnonUser[]): void {
+	const run = db.transaction((members: TempAnonUser[]) => {
+		for (const member of members) {
+			console.log('member:', member);
+			// add the anon user
+			const anon_id = queryAddAnonUser.run(member).lastInsertRowid;
+			// add the many-to-many relationship between the anon user and the group
+			queryAddAnonUserToAnonUserGroups.run(anon_id, group_id);
+		}
+	});
+
+	run(members);
+}
+
+/**
+ * Removes an anon user from a group.
+ * @param group_id The group_id of the group.
+ * @param anon_user_id The anon_user_id of the anon user.
+ */
+export function removeAnonUserFromGroup(group_id: number, anon_user_id: number): void {
+	const removeAnonUser = db.prepare(
+		`
+    DELETE FROM anon_user_groups WHERE anon_user_id = ? AND group_id = ?
+    `
+	);
+
+	removeAnonUser.run(anon_user_id, group_id);
 }
 
 /**
@@ -143,14 +184,13 @@ export function createGroupWithMembers(
  * @returns An array of Group objects.
  */
 export function getUsersGroups(user_id: string): Group[] {
-	const selectCurrentUsersAnonIds = db.prepare(`SELECT id FROM anon_user WHERE user_id = ?`);
 	const selectAnonsGroupIds = db.prepare(
 		`SELECT group_id FROM anon_user_groups WHERE anon_user_id = ?`
 	);
 
 	const transaction = db.transaction((user_id: string) => {
 		const returnGroups: Group[] = [];
-		const anon_user_ids = selectCurrentUsersAnonIds.all(user_id) as { id: number }[];
+		const anon_user_ids = queryAllAnonUsersForUser.all(user_id) as { id: number }[];
 		console.log('anon_user_ids:', anon_user_ids);
 
 		for (const anon_user of anon_user_ids) {
@@ -245,6 +285,41 @@ export function getAnonUserFromTokenId(anon_token_id: number): AnonUser {
 }
 
 /**
+ * get anon user from a token id
+ * @param anon_token_id The id of the anon_token.
+ */
+export function getAnonUserAndGroupFromTokenId(anon_token_id: number): AnonUser & Group {
+	const queryAnonUser = db.prepare(`
+    SELECT * FROM anon_token 
+    JOIN user_group ON anon_token.group_id = user_group.id
+    JOIN anon_user ON anon_user.id = anon_token.anon_user_id
+    WHERE anon_token.id = ?
+  `);
+
+	return queryAnonUser.get(anon_token_id) as AnonUser & Group;
+
+	// const transaction = db.transaction((anon_token_id: number) => {
+	// 	const anon_user_id = selectAnonUserId.get(anon_token_id) as { anon_user_id: number };
+	// 	const anon_user = selectAnonUser.get(anon_user_id.anon_user_id) as AnonUser;
+	// 	return anon_user;
+	// });
+
+	// return transaction(anon_token_id);
+}
+
+export function connectAnonUserToUser(anon_user_id: number, user_id: string) {
+	const addAnonUserToUser = db.prepare(
+		`
+    UPDATE anon_user SET user_id = ? WHERE id = ?
+    `
+	);
+
+	// INSERT INTO anon_user_user (anon_user_id, user_id) VALUES (?, ?)
+
+	addAnonUserToUser.run(user_id, anon_user_id);
+}
+
+/**
  * gets the anon_user with the given user_id
  * @param user_id The user_id of the user.
  */
@@ -262,15 +337,13 @@ export function getAnonUserFromUserId(user_id: string): AnonUser {
  */
 export function getAnonUsersUserMaybeKnows(user_id: string): AnonUser[] {
 	// we say a user probably knows an anon user if they share at least two groups
-
-	const selectCurrentUsersAnonIds = db.prepare(`SELECT id FROM anon_user WHERE user_id = ?`);
 	const selectAnonsGroupIds = db.prepare(
 		`SELECT group_id FROM anon_user_groups WHERE anon_user_id = ?`
 	);
 
 	const transaction = db.transaction((user_id: string) => {
 		const returnUsers: AnonUser[] = [];
-		const anon_user_ids = selectCurrentUsersAnonIds.all(user_id) as { id: number }[];
+		const anon_user_ids = queryAllAnonUsersForUser.all(user_id) as { id: number }[];
 		console.log('anon_user_ids:', anon_user_ids);
 
 		for (const anon_user of anon_user_ids) {

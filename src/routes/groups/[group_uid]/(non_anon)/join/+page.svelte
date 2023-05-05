@@ -30,4 +30,7 @@
 
 		<button type="submit">Join</button>
 	</form>
+
+  <p>If you see your name on this list and it is unavailable, you have probably connected this name to your Splitwiser account. You should Log in.</p>
+  <p>Names that have connected their Splitwiser accounts will appear as 'taken'. If you believe there is a mistake, your group owner can remove and add members.</p>
 </div>

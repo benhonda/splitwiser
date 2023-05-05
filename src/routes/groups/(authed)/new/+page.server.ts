@@ -21,14 +21,16 @@ export const actions: Actions = {
 		const { user } = await locals.auth.validateUser();
 
 		const form = await request.formData();
-		const group_name = form.get('group_name');
-		const group_members = form.get('group_members');
+		let group_name = form.get('group_name');
+		group_name = `${group_name}`;
+		let group_members = form.get('group_members');
+		group_members = `${group_members}`;
 
 		console.log('group_name', group_name);
 		console.log('group_members', group_members);
 
 		// check for empty values
-		if (typeof group_name !== 'string' || typeof group_members !== 'string') return fail(400);
+		if (group_name.length < 1 || group_members.length < 1) return fail(400);
 
 		try {
 			const groupMembersParsed: TempAnonUser[] = JSON.parse(group_members);

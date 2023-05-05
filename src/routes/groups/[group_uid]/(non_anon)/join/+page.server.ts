@@ -67,8 +67,8 @@ export const actions: Actions = {
 
 		if (typeof anon_user_id !== 'string' || typeof group_id !== 'string') throw error(400);
 
-		// const tokenMaxAge = 60 * 60 * 24 * 1; // 24 hours in seconds
-		const tokenMaxAge = 60 * 60 * 2; // 2 hours (for testing)
+		// set tokenMaxAge to 2 hours in development, 12 hours in production
+		const tokenMaxAge = process.env.NODE_ENV === 'production' ? 60 * 60 * 12 : 60 * 60 * 2;
 
 		const hashedVal = setAnonTokenForAnonUser(
 			to_number(anon_user_id),

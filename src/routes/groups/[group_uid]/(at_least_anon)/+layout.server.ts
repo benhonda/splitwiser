@@ -1,18 +1,11 @@
-import { error, fail, redirect } from '@sveltejs/kit';
-import {
-	createGroupWithMembers,
-	getAnonTokenFromCookie,
-	getAnonUserFromTokenId,
-	getAnonUserFromUserId,
-	getAnonUsersUserMaybeKnows,
-	getGroupByHashedId,
-	getUsersGroups
-} from '$lib/server/db';
-import type { AnonUser, TempAnonUser } from '$lib/server/db/types';
-import type { PageServerLoad, Actions } from './$types';
+import { getAnonTokenFromCookie, getAnonUserFromTokenId, getAnonUserFromUserId, getGroupByHashedId, getUsersGroups } from '$lib/server/db';
+import { error, redirect } from '@sveltejs/kit';
+import type { LayoutServerLoad } from './$types';
+import type { AnonUser } from '$lib/server/db/types';
 
-export const load: PageServerLoad = async ({ locals, params, cookies }) => {
-  // TODO: can we put this into a layout so that we don't have to repeat it in join page too?
+export const load: LayoutServerLoad = async ({ locals, params, cookies }) => {
+	
+
 	// FIRST: check if the group_uid is valid
 	// if not, show error page
 	const { group_uid } = params;
@@ -62,5 +55,3 @@ export const load: PageServerLoad = async ({ locals, params, cookies }) => {
 
 	return { group, user, anonUser };
 };
-
-export const actions: Actions = {};

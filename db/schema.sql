@@ -9,8 +9,8 @@ CREATE TABLE "auth_session" (
   "active_expires" INTEGER NOT NULL,
   "idle_expires" INTEGER NOT NULL,
   "user_id" TEXT NOT NULL,
-  FOREIGN KEY ("user_id") REFERENCES "auth_user" ("id") ON DELETE CASCADE,
-  CONSTRAINT "auth_session_user_id" UNIQUE ("user_id")
+  FOREIGN KEY ("user_id") REFERENCES "auth_user" ("id") ON DELETE CASCADE -- 
+  -- CONSTRAINT "auth_session_user_id" UNIQUE ("user_id")
 );
 CREATE TABLE "auth_key" (
   "id" TEXT NOT NULL PRIMARY KEY,
@@ -39,11 +39,14 @@ CREATE TABLE "anon_user" (
   "last_name" TEXT NOT NULL,
   "created_at" DATETIME NOT NULL DEFAULT (datetime(CURRENT_TIMESTAMP, 'localtime')),
   -- "active" is True when the user is logged in and connected to this anon account, or an anon user is in a session
-  "active" BOOLEAN NOT NULL DEFAULT 0,
+  -- "active" BOOLEAN NOT NULL DEFAULT 0,
+  -- "primary" = True tells us that this anon user was created when the user signed up
+  -- A user can have multiple anon_users. The user's "true" anon_user is one marked as "primary"
+  "primary" BOOLEAN NOT NULL DEFAULT 0,
   -- can be null if the user has not connected to this anon account yet
   "user_id" TEXT,
-  FOREIGN KEY ("user_id") REFERENCES "auth_user" ("id") ON DELETE CASCADE,
-  CONSTRAINT "anon_user_user_id" UNIQUE ("user_id")
+  FOREIGN KEY ("user_id") REFERENCES "auth_user" ("id") ON DELETE CASCADE --
+  -- CONSTRAINT "anon_user_user_id_primary" UNIQUE ("user_id", "primary")
 );
 -- JOIN table for anon users and groups
 CREATE TABLE "anon_user_groups" (
@@ -63,18 +66,20 @@ CREATE TABLE "anon_token" (
   "anon_user_id" INTEGER NOT NULL,
   "group_id" INTEGER NOT NULL,
   FOREIGN KEY ("anon_user_id") REFERENCES "anon_user" ("id") ON DELETE CASCADE,
-  FOREIGN KEY ("group_id") REFERENCES "user_group" ("id") ON DELETE CASCADE,
-  CONSTRAINT "anon_token_anon_user_id" UNIQUE ("anon_user_id")
+  FOREIGN KEY ("group_id") REFERENCES "user_group" ("id") ON DELETE CASCADE -- 
+  -- CONSTRAINT "anon_token_anon_user_id" UNIQUE ("anon_user_id")
 );
 -- Create indexes
 CREATE UNIQUE INDEX "auth_user_email" ON "auth_user" ("email");
-CREATE UNIQUE INDEX "auth_session_user_id" ON "auth_session" ("user_id");
+-- CREATE UNIQUE INDEX "auth_session_user_id" ON "auth_session" ("user_id");
 CREATE UNIQUE INDEX "auth_key_user_id" ON "auth_key" ("user_id");
 -- CREATE UNIQUE INDEX "auth_key_primary_key" ON "auth_key" ("primary_key");
-CREATE UNIQUE INDEX "anon_user_user_id" ON "anon_user" ("user_id");
+-- CREATE UNIQUE INDEX "anon_user_user_id_name" ON "anon_user" ("user_id");
 CREATE UNIQUE INDEX "group_owner_user_id_group_name" ON "user_group" ("owner_user_id", "group_name");
 CREATE UNIQUE INDEX "anon_user_groups_anon_user_id_group_id" ON "anon_user_groups" ("anon_user_id", "group_id");
-CREATE UNIQUE INDEX "anon_token_anon_user_id" ON "anon_token" ("anon_user_id");
+-- CREATE UNIQUE INDEX "anon_token_anon_user_id" ON "anon_token" ("anon_user_id");
+CREATE UNIQUE INDEX "anon_user_user_id_primary" ON anon_user ("user_id")
+WHERE "primary" = 1;
 -- Set the table mapping
 -- PRAGMA rename_table("auth_user", "AuthUser");
 -- PRAGMA rename_table("auth_session", "AuthSession");
